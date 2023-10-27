@@ -1,0 +1,332 @@
+import java.io.*;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.ArrayList;
+
+class Book {
+    int id;
+    String bookName;
+    String authorName;
+    String date;
+
+    public Book(int id, String bookName, String authorName) {
+        this.id = id;
+        this.bookName = bookName;
+        this.authorName = authorName;
+        this.date = getCurrentDate();
+    }
+
+    private String getCurrentDate() {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+        Date date = new Date();
+        return dateFormat.format(date);
+    }
+}
+
+class Student {
+    int id;
+    String sName;
+    String sClass;
+    int sRoll;
+    String bookName;
+    String date;
+
+    public Student(int id, String sName, String sClass, int sRoll, String bookName) {
+        this.id = id;
+        this.sName = sName;
+        this.sClass = sClass;
+        this.sRoll = sRoll;
+        this.bookName = bookName;
+        this.date = getCurrentDate();
+    }
+
+    private String getCurrentDate() {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+        Date date = new Date();
+        return dateFormat.format(date);
+    }
+}
+
+public class LibraryManagementSystem {
+    public static void main(String[] args) {
+        int choice;
+
+        while (true) {
+            clearScreen();
+            System.out.println("<== Library Management System ==>");
+            System.out.println("1. Add Book");
+            System.out.println("2. Books List");
+            System.out.println("3. Remove Book");
+            System.out.println("4. Issue Book");
+            System.out.println("5. Issued Book List");
+            System.out.println("0. Exit\n");
+
+            System.out.print("Enter your choice: ");
+
+            try {
+                choice = Integer.parseInt(new BufferedReader(new InputStreamReader(System.in)).readLine());
+            } catch (IOException | NumberFormatException e) {
+                choice = -1;
+            }
+
+            switch (choice) {
+                case 0:
+                    System.exit(0);
+                    break;
+                case 1:
+                    addBook();
+                    break;
+                case 2:
+                    booksList();
+                    break;
+                case 3:
+                    removeBook();
+                    break;
+                case 4:
+                    issueBook();
+                    break;
+                case 5:
+                    issuedBookList();
+                    break;
+                default:
+                    System.out.println("Invalid Choice...\n");
+                    break;
+            }
+        }
+    }
+
+    private static void clearScreen() {
+        System.out.print("\033[H\033[2J");
+        System.out.flush();
+    }
+
+    private static void addBook() {
+        String myDate = getCurrentDate();
+        Book book;
+
+        System.out.print("Enter book id: ");
+        int id = -1;
+
+        try {
+            id = Integer.parseInt(new BufferedReader(new InputStreamReader(System.in)).readLine());
+        } catch (IOException | NumberFormatException e) {
+            e.printStackTrace();
+        }
+
+        System.out.print("Enter book name: ");
+        String bookName = "";
+
+        try {
+            bookName = new BufferedReader(new InputStreamReader(System.in)).readLine();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        System.out.print("Enter author name: ");
+        String authorName = "";
+
+        try {
+            authorName = new BufferedReader(new InputStreamReader(System.in)).readLine();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        book = new Book(id, bookName, authorName);
+        ArrayList<Book> books = readBooksFromFile();
+        books.add(book);
+        writeBooksToFile(books);
+
+        System.out.println("Book Added Successfully");
+    }
+
+    private static ArrayList<Book> readBooksFromFile() {
+        ArrayList<Book> books = new ArrayList<>();
+        try (BufferedReader br = new BufferedReader(new FileReader("books.txt"))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] parts = line.split(",");
+                int id = Integer.parseInt(parts[0]);
+                String bookName = parts[1];
+                String authorName = parts[2];
+                String date = parts[3];
+                Book book = new Book(id, bookName, authorName);
+                book.date = date;
+                books.add(book);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return books;
+    }
+
+    private static void writeBooksToFile(ArrayList<Book> books) {
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter("books.txt"))) {
+            for (Book book : books) {
+                String line = book.id + "," + book.bookName + "," + book.authorName + "," + book.date;
+                bw.write(line);
+                bw.newLine();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void booksList() {
+        clearScreen();
+        System.out.println("<== Available Books ==>\n");
+        System.out.println(String.format("%-10s %-30s %-20s %s\n", "Book id", "Book Name", "Author", "Date"));
+
+        ArrayList<Book> books = readBooksFromFile();
+        for (Book book : books) {
+            System.out.println(String.format("%-10d %-30s %-20s %s\n", book.id, book.bookName, book.authorName, book.date));
+        }
+    }
+
+    private static void removeBook() {
+        int id, f = 0;
+        clearScreen();
+        System.out.println("<== Remove Books ==>\n");
+        System.out.print("Enter Book id to remove: ");
+
+        try {
+            id = Integer.parseInt(new BufferedReader(new InputStreamReader(System.in)).readLine());
+        } catch (IOException | NumberFormatException e) {
+            id = -1;
+        }
+
+        ArrayList<Book> books = readBooksFromFile();
+        ArrayList<Book> newBooks = new ArrayList<>();
+
+        for (Book book : books) {
+            if (book.id == id) {
+                f = 1;
+            } else {
+                newBooks.add(book);
+            }
+        }
+
+        writeBooksToFile(newBooks);
+
+        if (f == 1) {
+            System.out.println("\n\nDeleted Successfully.");
+        } else {
+            System.out.println("\n\nRecord Not Found !");
+        }
+    }
+
+    private static void issueBook() {
+        String myDate = getCurrentDate();
+        int f = 0;
+
+        clearScreen();
+        System.out.println("<== Issue Books ==>\n");
+        System.out.print("Enter Book id to issue: ");
+
+        int bookId = -1;
+
+        try {
+            bookId = Integer.parseInt(new BufferedReader(new InputStreamReader(System.in)).readLine());
+        } catch (IOException | NumberFormatException e) {
+            bookId = -1;
+        }
+
+        ArrayList<Book> books = readBooksFromFile();
+        Book selectedBook = null;
+
+        for (Book book : books) {
+            if (book.id == bookId) {
+                f = 1;
+                selectedBook = book;
+                break;
+            }
+        }
+
+        if (f == 0) {
+            System.out.println("No book found with this id");
+            System.out.println("Please try again...\n");
+            return;
+        }
+
+        System.out.print("Enter Student Name: ");
+        String sName = "";
+
+        try {
+            sName = new BufferedReader(new InputStreamReader(System.in)).readLine();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        System.out.print("Enter Student Class: ");
+        String sClass = "";
+
+        try {
+            sClass = new BufferedReader(new InputStreamReader(System.in)).readLine();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        System.out.print("Enter Student Roll: ");
+        int sRoll = -1;
+
+        try {
+            sRoll = Integer.parseInt(new BufferedReader(new InputStreamReader(System.in)).readLine());
+        } catch (IOException | NumberFormatException e) {
+            sRoll = -1;
+        }
+
+        Student student = new Student(selectedBook.id, sName, sClass, sRoll, selectedBook.bookName);
+        writeStudentToFile(student);
+
+        System.out.println("Book Issued Successfully\n");
+    }
+
+    private static void issuedBookList() {
+        clearScreen();
+        System.out.println("<== Book Issue List ==>\n");
+        System.out.println(String.format("%-10s %-30s %-20s %-10s %-30s %s\n", "S.id", "Name", "Class", "Roll", "Book Name", "Date"));
+
+        ArrayList<Student> students = readStudentsFromFile();
+        for (Student student : students) {
+            System.out.println(String.format("%-10d %-30s %-20s %-10d %-30s %s\n",
+                    student.id, student.sName, student.sClass, student.sRoll, student.bookName, student.date));
+        }
+    }
+
+    private static void writeStudentToFile(Student student) {
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter("issue.txt", true))) {
+            String line = student.id + "," + student.sName + "," + student.sClass + "," + student.sRoll + "," + student.bookName + "," + student.date;
+            bw.write(line);
+            bw.newLine();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static ArrayList<Student> readStudentsFromFile() {
+        ArrayList<Student> students = new ArrayList<>();
+        try (BufferedReader br = new BufferedReader(new FileReader("issue.txt"))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] parts = line.split(",");
+                int id = Integer.parseInt(parts[0]);
+                String sName = parts[1];
+                String sClass = parts[2];
+                int sRoll = Integer.parseInt(parts[3]);
+                String bookName = parts[4];
+                String date = parts[5];
+                Student student = new Student(id, sName, sClass, sRoll, bookName);
+                student.date = date;
+                students.add(student);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return students;
+    }
+
+    private static String getCurrentDate() {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+        Date date = new Date();
+        return dateFormat.format(date);
+    }
+}
